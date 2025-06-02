@@ -108,7 +108,7 @@ public class HelloDynamic {
      * Start all the Workers that are in this process. The Workers will then start polling for
      * Workflow Tasks and Activity Tasks.
      */
-    factory.isStarted();
+    factory.start();
 
     /*
      * Create the workflow stub Note that the Workflow type is not explicitly registered with the
@@ -131,7 +131,9 @@ public class HelloDynamic {
     startedWF.terminate("reasons");
 
     // this causes it to throw
-    //   Caused by: io.grpc.StatusRuntimeException: ALREADY_EXISTS: Workflow execution already finished. WorkflowId: HelloDynamicWorkflow, RunId: b73e0e74-cb3d-4893-bcaf-6247606fdfe3. Workflow Id reuse policy: reject duplicate workflow Id.
+    //   Caused by: io.grpc.StatusRuntimeException: ALREADY_EXISTS: Workflow execution already
+    // finished. WorkflowId: HelloDynamicWorkflow, RunId: b73e0e74-cb3d-4893-bcaf-6247606fdfe3.
+    // Workflow Id reuse policy: reject duplicate workflow Id.
     // because we set WorkflowIdReusePolicy.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE
     workflow = client.newUntypedWorkflowStub("DynamicWF", workflowOptions);
     workflow.signalWithStart("greetingSignal", new Object[] {"John"}, new Object[] {"Hello"});
