@@ -3,6 +3,7 @@ package io.temporal.samples.hello;
 import io.temporal.activity.Activity;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.activity.DynamicActivity;
+import io.temporal.api.enums.v1.WorkflowIdReusePolicy;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.client.WorkflowStub;
@@ -107,17 +108,32 @@ public class HelloDynamic {
      * Start all the Workers that are in this process. The Workers will then start polling for
      * Workflow Tasks and Activity Tasks.
      */
-    factory.start();
+    factory.isStarted();
 
     /*
      * Create the workflow stub Note that the Workflow type is not explicitly registered with the
      * Worker
      */
     WorkflowOptions workflowOptions =
-        WorkflowOptions.newBuilder().setTaskQueue(TASK_QUEUE).setWorkflowId(WORKFLOW_ID).build();
+        WorkflowOptions.newBuilder()
+            .setTaskQueue(TASK_QUEUE)
+            .setWorkflowId(WORKFLOW_ID)
+            .setWorkflowIdReusePolicy(
+                WorkflowIdReusePolicy.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE)
+            .build();
     WorkflowStub workflow = client.newUntypedWorkflowStub("DynamicWF", workflowOptions);
 
     // Start workflow execution and signal right after Pass in the workflow args and signal args
+    workflow.signalWithStart("greetingSignal", new Object[] {"John"}, new Object[] {"Hello"});
+
+    // terminate the workflow
+    WorkflowStub startedWF = client.newUntypedWorkflowStub(WORKFLOW_ID);
+    startedWF.terminate("reasons");
+
+    // this causes it to throw
+    //   Caused by: io.grpc.StatusRuntimeException: ALREADY_EXISTS: Workflow execution already finished. WorkflowId: HelloDynamicWorkflow, RunId: b73e0e74-cb3d-4893-bcaf-6247606fdfe3. Workflow Id reuse policy: reject duplicate workflow Id.
+    // because we set WorkflowIdReusePolicy.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE
+    workflow = client.newUntypedWorkflowStub("DynamicWF", workflowOptions);
     workflow.signalWithStart("greetingSignal", new Object[] {"John"}, new Object[] {"Hello"});
 
     // Wait for workflow to finish getting the results
